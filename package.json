@@ -1,0 +1,31 @@
+{
+  "name": "parcel-sandbox",
+  "version": "1.0.0",
+  "description": "Simple Parcel Sandbox",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html"
+  },
+  "dependencies": {
+    "array-to-tree": "^3.3.0",
+    "classnames": "^2.2.6",
+    "faker": "^4.1.0",
+    "prop-types": "15.7.2",
+    "react": "15.4.2",
+    "react-autobind": "^1.0.6",
+    "react-click-outside": "^3.0.1",
+    "react-dom": "15.4.2"
+  },
+  "devDependencies": {
+    "@babel/core": "7.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-loader": "^2.1.2",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.12.4",
+    "parcel-bundler": "^1.6.1",
+    "stylus": "^0.54.5"
+  }
+}

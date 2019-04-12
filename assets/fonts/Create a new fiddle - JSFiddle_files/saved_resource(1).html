@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://fiddle.jshell.net/_display/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title></title>
+  
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <script type="text/javascript" src="./dummy.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="./result-light.css">
+
+      <script type="text/javascript" src="./lodash.min.js"></script>
+
+  <style id="compiled-css" type="text/css">
+      
+  </style>
+
+
+  <!-- TODO: Missing CoffeeScript 2 -->
+
+  <script type="text/javascript">
+
+
+    window.onload=function(){
+      
+const tree = [
+{id: 0, children: [{
+  	id: 1,
+    children: [
+    	{
+  			id: 2,
+  		},
+      {
+  			id: 3,
+  		},
+    ]
+  },
+  {
+  	id: 4,
+    children: [
+    	{
+  			id: 5,
+  		},
+      {
+  			id: 6,
+  		},
+    ]
+  },
+  {
+  	id: 7,
+    children: [
+    	{
+  			id: 8,
+  		},
+      {
+  			id: 9,
+  		},
+    ]
+  },
+  ] }
+	
+	
+];
+
+const getValidTree = path => path.map(n => n.toString()).join(',children,');
+
+const path1 = [ 0, 0, 1 ];
+const path2 = [ 0, 1, 0 ];
+
+const removeFormTree = (tree, path) => {
+
+	const pathToFolder =  getValidTree(_.initial(path));
+  console.log(pathToFolder);
+	const nodeOrder = _.last(path);
+  const parentItem = _.get(tree, pathToFolder);
+  const newParentItem = { ...parentItem, children: _.at(parentItem.children, nodeOrder) };
+	
+	return _.update(
+  	tree, 
+    pathToFolder,
+    _ => newParentItem
+  );
+};
+
+const appendToTree = (tree, path, el) => {
+
+	const pathToFolder = getValidTree(_.initial(path));
+  console.log(pathToFolder);
+	const nodeOrder = _.last(path);
+  const parentItem = _.get(tree, pathToFolder);
+  const newParentItem = { ...parentItem, children: [...parentItem.children, el] };
+	
+	return _.update(
+  	tree, 
+    pathToFolder,
+    _ => newParentItem
+  );
+};
+
+console.log(appendToTree(removeFormTree(tree, path1), path2, _.get(tree, path1)))
+
+
+
+
+
+
+
+
+
+    }
+
+</script>
+
+</head>
+<body>
+    
+
+  
+  <script>
+    // tell the embed parent frame the height of the content
+    if (window.parent && window.parent.parent){
+      window.parent.parent.postMessage(["resultsFrame", {
+        height: document.body.getBoundingClientRect().height,
+        slug: ""
+      }], "*")
+    }
+
+    // always overwrite window.name, in case users try to set it manually
+    window.name = "result"
+  </script>
+
+
+</body></html>

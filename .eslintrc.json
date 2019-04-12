@@ -1,0 +1,38 @@
+{
+  "settings": {
+    "import/resolver": "node"
+  },
+  "extends": "airbnb",
+  "plugins": [
+    "react",
+    "jsx-a11y",
+    "import"
+  ],
+  "globals": {
+    "window": false,
+    "document": false
+  },
+  "rules": {
+    "import/no-extraneous-dependencies": "off",
+    "comma-dangle": "off",
+    "padded-blocks": [
+      "off"
+    ],
+    "react/jsx-closing-bracket-location": [
+      1,
+      "after-props"
+    ],
+    "no-unused-vars": "off",
+    "no-useless-return": "off",
+    "max-len": "off",
+    "react/destructuring-assignment": [
+      "off",
+      "always"
+    ],
+    "import/prefer-default-export": [
+      "off",
+      "always"
+    ],
+    "class-methods-use-this": "off"
+  }
+}

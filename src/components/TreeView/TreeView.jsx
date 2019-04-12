@@ -201,7 +201,7 @@ class TreeView extends Component {
     const node = data.find(x => x.id === nodeId);
 
     if (isFolder(node)) {
-      this.openFolderTimer[nodeId] = setTimeout(() => this.expandNode(nodeId, true), 500);
+      this.openFolderTimer[nodeId] = setTimeout(() => this.expandNode(nodeId, true), 1500);
     }
 
     this.dragOverNode(nodeId, true);

@@ -87,6 +87,11 @@ class TreeViewNode extends Component {
         e.stopPropagation();
         return;
       }
+      case 27: { // Esc
+        const { editing, onCancelEditing } = this.props;
+        if (editing) onCancelEditing();
+        return;
+      }
       default:
         return;
     }

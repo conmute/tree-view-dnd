@@ -28,13 +28,14 @@ class TreeView extends Component {
     super(props);
     autoBind(this);
 
-    this.openFolderTimer = {};
+    this.openFolderTimer = null;
+    this.movedNode = null;
 
     this.state = {
       data: [],
       tree: [],
       currentChapterId: null,
-      movedNode: null,
+
     };
   }
 
@@ -152,15 +153,17 @@ class TreeView extends Component {
     const treeViewElement = document.querySelector(TREE_VIEW_SELECTOR);
     treeViewElement.addEventListener('dragenter', this.handleDragEnter, false);
     treeViewElement.addEventListener('dragleave', this.handleDragLeave, false);
+    treeViewElement.addEventListener('dragover', this.handleDragOver, false);
   }
 
   removeDndListeners() {
     const treeViewElement = document.querySelector(TREE_VIEW_SELECTOR);
     treeViewElement.removeEventListener('dragenter', this.handleDragEnter, false);
     treeViewElement.removeEventListener('dragleave', this.handleDragLeave, false);
+    treeViewElement.removeEventListener('dragover', this.handleDragOver, false);
   }
 
-  handleDragStart(id, orderPath, e) {
+  handleDragStart(id, e) {
 
     const { data } = this.state;
     const selectedDataIds = data
@@ -184,7 +187,7 @@ class TreeView extends Component {
     const dragImage = createDragImage(nodeElement, id);
     e.dataTransfer.setDragImage(dragImage, 0, 0);
 
-    this.setState({ movedNode: { id, orderPath } });
+    this.movedNode = { id };
 
     setTimeout(() => this.draggableNode(id, true));
 
@@ -201,7 +204,15 @@ class TreeView extends Component {
     const node = data.find(x => x.id === nodeId);
 
     if (isFolder(node)) {
-      this.openFolderTimer[nodeId] = setTimeout(() => this.expandNode(nodeId, true), 1500);
+
+      if (this.openFolderTimer) {
+        clearTimeout(this.openFolderTimer);
+        this.openFolderTimer = null;
+      }
+
+      setTimeout(() => {
+        this.openFolderTimer = setTimeout(() => this.expandNode(nodeId, true), 1000);
+      });
     }
 
     this.dragOverNode(nodeId, true);
@@ -222,17 +233,24 @@ class TreeView extends Component {
     const nodeId = nodeElement.dataset.id;
     const node = data.find(x => x.id === nodeId);
 
-    if (isFolder(node)) clearTimeout(this.openFolderTimer[nodeId]);
+    console.log('handleDragLeave clear');
+    clearTimeout(this.openFolderTimer);
+    this.openFolderTimer = null;
+  }
+
+  handleDragOver(e) {
+    // this.
   }
 
   handleDrop(id) {
 
-    const { movedNode, data, currentChapterId } = this.state;
+    const { data, currentChapterId } = this.state;
 
-    const nextData = reorder(data, movedNode.id, id);
+    const nextData = reorder(data, this.movedNode.id, id);
     const { treeData, preparedData } = getPreparedData(nextData, data, currentChapterId);
 
-    this.setState({ data: preparedData, tree: treeData, movedNode: null });
+    this.movedNode = null;
+    this.setState({ data: preparedData, tree: treeData });
   }
 
   handleDragEnd(e) {
@@ -280,7 +298,7 @@ class TreeView extends Component {
           onStartEditing={() => this.startEditing(node.id)}
           onCancelEditing={() => this.cancelEditing(node.id)}
           onSubmitEditing={value => this.submitEditing(node.id, value)}
-          onDragStart={e => this.handleDragStart(node.id, newOrderPath, e)}
+          onDragStart={e => this.handleDragStart(node.id, e)}
           onDrop={e => this.handleDrop(node.id, e)}
           onDragEnd={e => this.handleDragEnd(e)}>
           {link.children && this.buildTree(link.children, newOrderPath)}

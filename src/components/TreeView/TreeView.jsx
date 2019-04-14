@@ -233,7 +233,6 @@ class TreeView extends Component {
     const nodeId = nodeElement.dataset.id;
     const node = data.find(x => x.id === nodeId);
 
-    console.log('handleDragLeave clear');
     clearTimeout(this.openFolderTimer);
     this.openFolderTimer = null;
   }

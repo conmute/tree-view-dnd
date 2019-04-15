@@ -204,19 +204,18 @@ class TreeView extends Component {
     const node = data.find(x => x.id === nodeId);
 
     if (isFolder(node)) {
-
-      if (this.openFolderTimer) {
-        clearTimeout(this.openFolderTimer);
-        this.openFolderTimer = null;
-      }
-
       setTimeout(() => {
+
+        if (this.openFolderTimer) {
+          clearTimeout(this.openFolderTimer);
+          this.openFolderTimer = null;
+        }
+
         this.openFolderTimer = setTimeout(() => this.expandNode(nodeId, true), 1000);
       });
     }
 
     this.dragOverNode(nodeId, true);
-
   }
 
   handleDragLeave(e) {

@@ -15,6 +15,7 @@ import {
   removeDragImage,
   isFolder,
   getOverStatus,
+  dropTypes,
 } from './helpers';
 
 import TreeViewNode from './TreeViewNode.jsx';
@@ -117,7 +118,7 @@ class TreeView extends Component {
     const nextData = data.map(x => ({
       ...x,
       draggable: x.id === id ? value : x.draggable,
-      dragOver: x.id === id ? 'top' : null,
+      dragOver: x.id === id ? dropTypes.BEFORE : null,
     }));
 
     this.setState({ data: nextData });

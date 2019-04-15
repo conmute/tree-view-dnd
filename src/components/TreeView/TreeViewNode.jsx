@@ -7,7 +7,7 @@ import classnames from 'classnames';
 import enhanceWithClickOutside from 'react-click-outside';
 import * as _ from 'lodash';
 
-import { nodeTypes } from './helpers';
+import { nodeTypes, dropTypes } from './helpers';
 
 class TreeViewNode extends Component {
 
@@ -159,7 +159,7 @@ class TreeViewNode extends Component {
       )}>
 
         {
-          dragOver === 'top' && (
+          dragOver === dropTypes.BEFORE && (
             <div
               data-id={id}
               onDragOver={e => e.preventDefault()}
@@ -226,7 +226,7 @@ class TreeViewNode extends Component {
         </div>
 
         {
-          dragOver === 'bottom' && (
+          dragOver === dropTypes.AFTER && (
             <div
               data-id={id}
               onDragOver={e => e.preventDefault()}
@@ -252,7 +252,11 @@ TreeViewNode.propTypes = {
   current: PropTypes.bool.isRequired,
   selected: PropTypes.bool.isRequired,
   draggable: PropTypes.bool.isRequired,
-  dragOver: PropTypes.oneOf(['top', 'middle', 'bottom']),
+  dragOver: PropTypes.oneOf([
+    dropTypes.BEFORE,
+    dropTypes.IN,
+    dropTypes.AFTER
+  ]),
   expanded: PropTypes.bool.isRequired,
   editing: PropTypes.bool.isRequired,
   orderPath: PropTypes.arrayOf(PropTypes.number).isRequired,

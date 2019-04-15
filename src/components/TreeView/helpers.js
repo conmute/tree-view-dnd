@@ -9,15 +9,21 @@ export const nodeTypes = {
 
 export const ROOT = 'ROOT';
 
+export const dropTypes = {
+  BEFORE: 'BEFORE',
+  IN: 'IN',
+  AFTER: 'AFTER',
+};
+
 export const isFolder = node => node.type === nodeTypes.FOLDER;
 
 export const isPage = node => node.type === nodeTypes.PAGE;
 
 export const getOverStatus = (p, folder) => {
-  if (!folder) return p - 0.5 > 0 ? 'bottom' : 'top';
-  if (p - 0.3 < 0) return 'top';
-  if (p - 0.3 > 0.3) return 'bottom';
-  return 'middle';
+  if (!folder) return p - 0.5 > 0 ? dropTypes.AFTER : dropTypes.BEFORE;
+  if (p - 0.3 < 0) return dropTypes.BEFORE;
+  if (p - 0.3 > 0.3) return dropTypes.AFTER;
+  return dropTypes.IN;
 };
 
 export const createDragImage = (nodeElement, id, parrentSelector) => {
@@ -193,29 +199,15 @@ export const reorder = (data, id, targetId) => {
   let targetFolderId;
   let targetOrder;
 
-  if (target.dragOver === 'middle') {
+  if (target.dragOver === dropTypes.IN) {
     targetFolderId = target.id;
     targetOrder = data.filter(x => x.parentId === targetFolderId).length;
   } else {
     targetFolderId = target.parentId;
     const fix = target.dragOver === 'bottom' ? 1 : 0;
-    console.log('dragOver, fix: ', target.dragOver, fix);
     targetOrder = target.order + fix;
   }
 
-  const shiftedData2 = shiftOrders(
-    shiftedData,
-    targetFolderId,
-    targetOrder,
-    1
-  );
-
-  const res = changePosition(shiftedData2, node.id, targetFolderId, targetOrder);
-
-  console.log('target', node.order, target.order);
-  console.log('shiftedData: ', shiftedData.map(x => ({ name: x.name, order: x.order })));
-  console.log('shiftedData2: ', shiftedData2.map(x => ({ name: x.name, order: x.order })));
-  console.log('res: ', res.map(x => ({ name: x.name, order: x.order })));
-
-  return res;
+  const shiftedData2 = shiftOrders(shiftedData, targetFolderId, targetOrder, 1);
+  return changePosition(shiftedData2, node.id, targetFolderId, targetOrder);
 };

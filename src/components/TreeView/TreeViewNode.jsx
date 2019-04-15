@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 import autoBind from 'react-autobind';
 import classnames from 'classnames';
 import enhanceWithClickOutside from 'react-click-outside';
+import * as _ from 'lodash';
 
 import { nodeTypes } from './helpers';
 
@@ -138,7 +139,7 @@ class TreeViewNode extends Component {
   render() {
 
     const {
-      id, name, order, type, current, selected, dragOver,
+      id, name, type, current, selected, dragOver,
       draggable, expanded, editing, orderPath, children
     } = this.props;
 
@@ -152,16 +153,23 @@ class TreeViewNode extends Component {
           'tv-node_expanded': expanded,
           'tv-node_current': current,
           'tv-node_editing': editing,
-          'tv-node_drag-over': dragOver,
+          'tv-node_drag-over': !_.isNull(dragOver),
           'tv-node_draggable': draggable,
         }
       )}>
 
-        <div
-          data-id={id}
-          onDragOver={e => e.preventDefault()}
-          onDrop={this.handleDrop}
-          className="tv-node__content tv-node__content_fake" />
+        {
+          dragOver === 'top' && (
+            <div
+              data-id={id}
+              onDragOver={e => e.preventDefault()}
+              onDrop={this.handleDrop}
+              className={classnames(
+                'tv-node__content',
+                'tv-node__content_fake'
+              )} />
+          )
+        }
 
         <div
           onClick={this.handleNodeClick}
@@ -217,6 +225,19 @@ class TreeViewNode extends Component {
 
         </div>
 
+        {
+          dragOver === 'bottom' && (
+            <div
+              data-id={id}
+              onDragOver={e => e.preventDefault()}
+              onDrop={this.handleDrop}
+              className={classnames(
+                'tv-node__content',
+                'tv-node__content_fake'
+              )} />
+          )
+        }
+
         {expanded && <div className="tv-node__children">{children}</div>}
 
       </div>
@@ -230,9 +251,8 @@ TreeViewNode.propTypes = {
   type: PropTypes.string.isRequired,
   current: PropTypes.bool.isRequired,
   selected: PropTypes.bool.isRequired,
-  order: PropTypes.number.isRequired,
   draggable: PropTypes.bool.isRequired,
-  dragOver: PropTypes.bool.isRequired,
+  dragOver: PropTypes.oneOf(['top', 'middle', 'bottom']),
   expanded: PropTypes.bool.isRequired,
   editing: PropTypes.bool.isRequired,
   orderPath: PropTypes.arrayOf(PropTypes.number).isRequired,
@@ -250,6 +270,7 @@ TreeViewNode.propTypes = {
 
 TreeViewNode.defaultProps = {
   children: null,
+  dragOver: null,
 };
 
 export default enhanceWithClickOutside(TreeViewNode);

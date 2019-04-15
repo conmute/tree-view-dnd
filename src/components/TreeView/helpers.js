@@ -13,10 +13,30 @@ export const isFolder = node => node.type === nodeTypes.FOLDER;
 
 export const isPage = node => node.type === nodeTypes.PAGE;
 
-export const createDragImage = (nodeElement, id) => {
+export const getOverStatus = (p, folder) => {
+  if (!folder) return p - 0.5 > 0 ? 'bottom' : 'top';
+  if (p - 0.3 < 0) return 'top';
+  if (p - 0.3 > 0.3) return 'bottom';
+  return 'middle';
+};
+
+export const createDragImage = (nodeElement, id, parrentSelector) => {
+
   const dragImage = nodeElement.cloneNode(true);
   dragImage.id = `dragged-${id}`;
-  document.body.append(dragImage);
+
+  let parrentElement;
+
+  if (parrentSelector) {
+    parrentElement = document.querySelector(parrentSelector);
+  } else {
+    parrentElement = document.body;
+  }
+
+  if (!parrentElement) return null;
+
+  parrentElement.append(dragImage);
+
   return dragImage;
 };
 
@@ -69,7 +89,6 @@ const sortGroupe = group => group
 
 const getPathToRoot = (nodeId, nodeList) => {
 
-  // { [chapter.id]: chapter.parentId }
   const folderIdList = nodeList
     .reduce((acc, cur) => ({ ...acc, [cur.id]: cur.parentId }), {});
 
@@ -129,7 +148,7 @@ export const getPreparedData = (nextData, prevData, currentId) => {
     nd => expandFolders(nd, expandIds),
     nd => selectChapters(nd, prevSelectedIds),
     nd => chooseChapter(nd, currentChapterId),
-    nd => nd.map(x => ({ ...x, draggable: false, dragOver: false })),
+    nd => nd.map(x => ({ ...x, draggable: false, dragOver: null })),
     nd => editChapter(nd, prevEditingId),
   )(nextData);
 
@@ -174,16 +193,29 @@ export const reorder = (data, id, targetId) => {
   let targetFolderId;
   let targetOrder;
 
-  if (target.type === nodeTypes.FOLDER) {
+  if (target.dragOver === 'middle') {
     targetFolderId = target.id;
     targetOrder = data.filter(x => x.parentId === targetFolderId).length;
   } else {
     targetFolderId = target.parentId;
-    targetOrder = target.order;
+    const fix = target.dragOver === 'bottom' ? 1 : 0;
+    console.log('dragOver, fix: ', target.dragOver, fix);
+    targetOrder = target.order + fix;
   }
 
-  const shiftedData2 = shiftOrders(shiftedData, targetFolderId, targetOrder, 1);
+  const shiftedData2 = shiftOrders(
+    shiftedData,
+    targetFolderId,
+    targetOrder,
+    1
+  );
+
   const res = changePosition(shiftedData2, node.id, targetFolderId, targetOrder);
+
+  console.log('target', node.order, target.order);
+  console.log('shiftedData: ', shiftedData.map(x => ({ name: x.name, order: x.order })));
+  console.log('shiftedData2: ', shiftedData2.map(x => ({ name: x.name, order: x.order })));
+  console.log('res: ', res.map(x => ({ name: x.name, order: x.order })));
 
   return res;
 };

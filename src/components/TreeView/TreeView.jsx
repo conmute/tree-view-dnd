@@ -14,12 +14,14 @@ import {
   createDragImage,
   removeDragImage,
   isFolder,
+  getOverStatus,
 } from './helpers';
 
 import TreeViewNode from './TreeViewNode.jsx';
 import DragImage from '../DragImage';
 
 const NODE_SELECTOR = '.tv-node__content';
+const FAKE_NODE_SELECTOR = '.tv-node__content_fake';
 const TREE_VIEW_SELECTOR = '.tree-view';
 
 class TreeView extends Component {
@@ -104,7 +106,7 @@ class TreeView extends Component {
 
   dragOverNode(id, value) {
     const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, dragOver: x.id === id ? value : false }));
+    const nextData = data.map(x => ({ ...x, dragOver: x.id === id ? value : null }));
     this.setState({ data: nextData });
   }
 
@@ -115,7 +117,7 @@ class TreeView extends Component {
     const nextData = data.map(x => ({
       ...x,
       draggable: x.id === id ? value : x.draggable,
-      dragOver: x.id === id ? value : false,
+      dragOver: x.id === id ? 'top' : null,
     }));
 
     this.setState({ data: nextData });
@@ -147,6 +149,12 @@ class TreeView extends Component {
   takeNode(id) {
     const { data } = this.state;
     return data.find(x => x.id === id);
+  }
+
+  clearTimer() {
+    if (!this.openFolderTimer) return;
+    clearTimeout(this.openFolderTimer);
+    this.openFolderTimer = null;
   }
 
   createDndListeners() {
@@ -184,8 +192,11 @@ class TreeView extends Component {
 
     this.createDndListeners();
     const nodeElement = findParentElement(e.target, NODE_SELECTOR, TREE_VIEW_SELECTOR);
+    const clientRect = nodeElement.getBoundingClientRect();
+    const offsetX = (e.clientX - clientRect.left);
+    const offsetY = (e.clientY - clientRect.top);
     const dragImage = createDragImage(nodeElement, id);
-    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    e.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
 
     this.movedNode = { id };
 
@@ -202,20 +213,25 @@ class TreeView extends Component {
     const { data } = this.state;
     const nodeId = nodeElement.dataset.id;
     const node = data.find(x => x.id === nodeId);
+    const isFakeNoode = nodeElement.matches(FAKE_NODE_SELECTOR);
+    const isNodeFolder = isFolder(node);
 
-    if (isFolder(node)) {
-      setTimeout(() => {
+    this.overNode = {
+      id: nodeId,
+      fake: isFakeNoode,
+      folder: isNodeFolder,
+      top: nodeElement.offsetTop,
+      height: nodeElement.offsetHeight,
+    };
 
-        if (this.openFolderTimer) {
-          clearTimeout(this.openFolderTimer);
-          this.openFolderTimer = null;
-        }
-
+    setTimeout(() => {
+      if (!isFakeNoode && isNodeFolder) {
+        this.clearTimer();
         this.openFolderTimer = setTimeout(() => this.expandNode(nodeId, true), 1000);
-      });
-    }
-
-    this.dragOverNode(nodeId, true);
+      } else {
+        this.clearTimer();
+      }
+    });
   }
 
   handleDragLeave(e) {
@@ -232,12 +248,30 @@ class TreeView extends Component {
     const nodeId = nodeElement.dataset.id;
     const node = data.find(x => x.id === nodeId);
 
-    clearTimeout(this.openFolderTimer);
-    this.openFolderTimer = null;
+    this.clearTimer();
   }
 
   handleDragOver(e) {
-    // this.
+
+    if (!this.overNode) return;
+
+    const {
+      id, fake, folder,
+      top, height
+    } = this.overNode;
+
+    if (e.clientY < top || fake) return;
+
+    const mousePosition = e.clientY - top;
+    const mouseRelativePosition = mousePosition / height;
+    const status = getOverStatus(mouseRelativePosition, folder);
+
+    if (!this.dragOverStatus
+      || this.dragOverStatus.id !== id
+      || this.dragOverStatus.status !== status) {
+      this.dragOverStatus = { id, status };
+      this.dragOverNode(id, status);
+    }
   }
 
   handleDrop(id) {
@@ -245,6 +279,7 @@ class TreeView extends Component {
     const { data, currentChapterId } = this.state;
 
     const nextData = reorder(data, this.movedNode.id, id);
+
     const { treeData, preparedData } = getPreparedData(nextData, data, currentChapterId);
 
     this.movedNode = null;
@@ -261,9 +296,10 @@ class TreeView extends Component {
 
     const nodeId = nodeElement.dataset.id;
 
+    this.draggableNode(nodeId, false);
+
     setTimeout(() => {
-      this.draggableNode(nodeId, false);
-      this.dragOverNode(null, false);
+      this.dragOverNode(null, null);
     });
 
     removeDragImage(nodeId);
@@ -284,12 +320,12 @@ class TreeView extends Component {
           type={node.type}
           current={node.current}
           selected={node.selected}
-          order={node.order}
           draggable={node.draggable}
           dragOver={node.dragOver}
           expanded={node.expanded}
           editing={node.editing}
           orderPath={newOrderPath}
+          order={order}
           onChoose={() => this.chooseChapter(node.id)}
           onExpand={value => this.expandNode(node.id, value)}
           onSelect={value => this.selectNode(node.id, value)}

@@ -25,10 +25,6 @@
   &:focus
     outline none
     background-color rgba(#d4e3fc, .4)
-    // background-color transparent
-
-  &:hover
-    background-color rgba(#d4e3fc, .4)
 
 .tv-node__children
   max-height 0
@@ -74,7 +70,8 @@
   outline none
 
 .tv-node__content.tv-node__content_fake
-  height 0
+  max-height 0
+  transition all 1s ease-out;
 
 .tv-node
   &.tv-node_selected
@@ -103,20 +100,20 @@
         border-left 5px solid transparent
         background-color transparent
       & > .tv-node__content:not(.tv-node__content_fake)
-        height 0
+        max-height 0
 
   &.tv-node_drag-over
     &.tv-node_folder
-      & > .tv-node__content 
+      & > .tv-node__content:not(.tv-node__content_fake)
         background-color #d4e3fc
-    &:not(.tv-node_folder) > .tv-node__content.tv-node__content_fake
-      height 27px
+    & > .tv-node__content.tv-node__content_fake
+      max-height 27px
 
   &:not(.tv-node_folder)
     .tv-node__switcher
       visibility hidden
 
-for num in (0..9)
+  for num in (0..9)
     &.tv-node_deep-level-{num}
       & > .tv-node__content 
         padding-left 41px + 22px * num

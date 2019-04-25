@@ -71,7 +71,7 @@ export const getFirstChapterId = (data, tree) => {
   return null;
 };
 
-const createTree = (groupes, key = 'ROOT') => {
+export const createTree = (groupes, key = 'ROOT') => {
 
   if (!groupes[key]) return [];
 
@@ -87,9 +87,9 @@ const createTree = (groupes, key = 'ROOT') => {
   });
 };
 
-const groupeData = data => _.groupBy(data, x => x.parentId);
+export const groupeData = data => _.groupBy(data, x => x.parentId);
 
-const sortGroupe = group => group
+export const sortGroupes = group => group
   .map((x, i) => (_.isUndefined(x.order) ? { ...x, order: i } : x)) // temp
   .sort((a, b) => a.order - b.order);
 
@@ -127,7 +127,7 @@ const editChapter = (data, id) => data
 export const getPreparedData = (nextData, prevData, currentId) => {
 
   const grouppedData = groupeData(nextData);
-  const sortedGroupes = _.mapValues(grouppedData, sortGroupe);
+  const sortedGroupes = _.mapValues(grouppedData, sortGroupes);
   const treeData = createTree(sortedGroupes);
 
   const prevExpandedIds = prevData
@@ -204,7 +204,7 @@ export const reorder = (data, id, targetId) => {
     targetOrder = data.filter(x => x.parentId === targetFolderId).length;
   } else {
     targetFolderId = target.parentId;
-    const fix = target.dragOver === 'bottom' ? 1 : 0;
+    const fix = target.dragOver === dropTypes.AFTER ? 1 : 0;
     targetOrder = target.order + fix;
   }
 

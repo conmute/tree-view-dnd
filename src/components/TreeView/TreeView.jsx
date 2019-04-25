@@ -6,24 +6,31 @@ import * as _ from 'lodash';
 
 import './style.styl';
 
-import {
-  getPreparedData,
-  getFirstChapterId,
-  findParentElement,
-  reorder,
-  createDragImage,
-  removeDragImage,
-  isFolder,
-  getOverStatus,
-  dropTypes,
-} from './helpers';
+import Draggable from './Draggable.jsx';
 
-import TreeViewNode from './TreeViewNode.jsx';
-import DragImage from '../DragImage';
+export const nodeTypes = {
+  FOLDER: 'FOLDER',
+  PAGE: 'PAGE',
+};
 
-const NODE_SELECTOR = '.tv-node__content';
-const FAKE_NODE_SELECTOR = '.tv-node__content_fake';
-const TREE_VIEW_SELECTOR = '.tree-view';
+const inRange = (n, from, to) => n >= from && n <= to;
+
+const getShiftedRange = (shift, lastOrder, nextOrder) => ({
+  from: shift > 0 ? lastOrder + 1 : nextOrder,
+  to: shift > 0 ? nextOrder : lastOrder,
+});
+
+const cookData = (nextData, expandedIds = []) => {
+
+  const data = [...nextData];
+
+  const collapsedIds = data
+    .filter(x => x.type === nodeTypes.FOLDER)
+    .filter(x => expandedIds.indexOf(x.parentId) === -1)
+    .map(x => x.id);
+
+  return data.filter(x => collapsedIds.indexOf(x.parentId) === -1);
+};
 
 class TreeView extends Component {
 
@@ -31,322 +38,91 @@ class TreeView extends Component {
     super(props);
     autoBind(this);
 
-    this.openFolderTimer = null;
-    this.movedNode = null;
+    const { data: rawData } = this.props;
+
+    const data = rawData.map((x, order) => ({ ...x, shift: 0, order }));
+    const cookedData = cookData(data);
 
     this.state = {
-      data: [],
-      tree: [],
-      currentChapterId: null,
-
+      data,
+      cookedData,
+      expandedIds: [],
+      instant: false,
     };
-  }
-
-  componentDidMount() {
-
-    const { data } = this.props;
-
-    const {
-      treeData,
-      preparedData,
-      currentChapterId
-    } = getPreparedData(data, []);
-
-    this.setState({ data: preparedData, tree: treeData, currentChapterId });
   }
 
   componentWillReceiveProps(nextProps) {
-
-    const { data: nextData } = nextProps;
-
-    const {
-      data: prevData,
-      currentChapterId: prevCurrentId
-    } = this.state;
-
-    let currentChapterId = prevCurrentId;
-
-    const {
-      treeData,
-      preparedData
-    } = getPreparedData(nextData, [], currentChapterId);
-
-    // Choose other chapter if currentChapter has been deleted
-    if (nextData.findIndex(x => x.id === currentChapterId) === -1) {
-      currentChapterId = getFirstChapterId(nextData, treeData);
-      // bus.DISPATCH(selectScreens(currentChapterId));
-    }
-
-    this.setState({ data: preparedData, tree: treeData, currentChapterId });
+    const { expandedIds } = this.state;
+    console.log('data: ', cookData(nextProps.data, expandedIds));
   }
 
-  selectNode(id, value) {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, selected: x.id === id ? value : x.selected }));
-    this.setState({ data: nextData });
+  handleDrag({ shift }, node) {
+    this.shiftOtherNodes(shift, node.order);
   }
 
-  deselectAll() {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, selected: false }));
-    this.setState({ data: nextData });
-  }
-
-  expandNode(id, value) {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, expanded: x.id === id ? value : x.expanded }));
-    this.setState({ data: nextData });
-  }
-
-  chooseChapter(id) {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, current: x.id === id, selected: false }));
-    this.setState({ data: nextData, currentChapterId: id });
-    // bus.DISPATCH(selectScreens(id));
-  }
-
-  dragOverNode(id, value) {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, dragOver: x.id === id ? value : null }));
-    this.setState({ data: nextData });
-  }
-
-  draggableNode(id, value) {
+  handleDrop({ shift }, node) {
 
     const { data } = this.state;
 
-    const nextData = data.map(x => ({
-      ...x,
-      draggable: x.id === id ? value : x.draggable,
-      dragOver: x.id === id ? dropTypes.BEFORE : null,
-    }));
+    const lastOrder = node.order;
+    const nextOrder = node.order + shift;
 
-    this.setState({ data: nextData });
+    const { from, to } = getShiftedRange(shift, lastOrder, nextOrder);
+
+    const nextData = data
+      .map(x => ({ ...x, shift: 0 }))
+      .map(x => (inRange(x.order, from, to) ? { ...x, order: x.order - Math.sign(shift) } : x))
+      .map(x => (x.id === node.id ? { ...x, order: nextOrder } : x))
+      .sort((a, b) => a.order - b.order);
+
+    const cookedData = cookData(nextData);
+
+    this.setState({
+      data: nextData,
+      cookedData,
+      instant: true
+    }, () => setTimeout(() => this.setState({ instant: false })));
   }
 
-  startEditing(id) {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, editing: x.id === id }));
-    this.setState({ data: nextData });
-  }
-
-  cancelEditing() {
-    const { data } = this.state;
-    const nextData = data.map(x => ({ ...x, editing: false }));
-    this.setState({ data: nextData });
-  }
-
-  submitEditing(id, name) {
-    const { data } = this.state;
-    const nextData = data.map(x => ({
-      ...x,
-      editing: false,
-      name: x.id === id ? name : x.name,
-    }));
-    this.setState({ data: nextData });
-    // bus.DISPATCH(updateChapter(id, name));
-  }
-
-  takeNode(id) {
-    const { data } = this.state;
-    return data.find(x => x.id === id);
-  }
-
-  clearTimer() {
-    if (!this.openFolderTimer) return;
-    clearTimeout(this.openFolderTimer);
-    this.openFolderTimer = null;
-  }
-
-  createDndListeners() {
-    const treeViewElement = document.querySelector(TREE_VIEW_SELECTOR);
-    treeViewElement.addEventListener('dragenter', this.handleDragEnter, false);
-    treeViewElement.addEventListener('dragleave', this.handleDragLeave, false);
-    treeViewElement.addEventListener('dragover', this.handleDragOver, false);
-  }
-
-  removeDndListeners() {
-    const treeViewElement = document.querySelector(TREE_VIEW_SELECTOR);
-    treeViewElement.removeEventListener('dragenter', this.handleDragEnter, false);
-    treeViewElement.removeEventListener('dragleave', this.handleDragLeave, false);
-    treeViewElement.removeEventListener('dragover', this.handleDragOver, false);
-  }
-
-  handleDragStart(id, e) {
+  shiftOtherNodes(shift, order) {
 
     const { data } = this.state;
-    const selectedDataIds = data
-      .filter(x => x.selected)
-      .map(x => x.id);
 
-    const count = selectedDataIds.length;
+    const lastOrder = order;
+    const nextOrder = order + shift;
 
-    if (selectedDataIds.indexOf(id) !== -1) {
+    const { from, to } = getShiftedRange(shift, lastOrder, nextOrder);
+    const nextData = data.map(x => ({ ...x, shift: inRange(x.order, from, to) ? -Math.sign(shift) : 0 }));
+    const cookedData = cookData(nextData);
 
-      const element = document.createElement('div');
-
-      ReactDOM.render(<DragImage count={count} />, element, () => {
-        document.body.append(element);
-        e.dataTransfer.setDragImage(element, 0, 0);
-      });
-    }
-
-    this.createDndListeners();
-    const nodeElement = findParentElement(e.target, NODE_SELECTOR, TREE_VIEW_SELECTOR);
-    const clientRect = nodeElement.getBoundingClientRect();
-    const offsetX = (e.clientX - clientRect.left);
-    const offsetY = (e.clientY - clientRect.top);
-    const dragImage = createDragImage(nodeElement, id);
-    e.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
-
-    this.movedNode = { id };
-
-    setTimeout(() => this.draggableNode(id, true));
-
-  }
-
-  handleDragEnter(e) {
-
-    const nodeElement = findParentElement(e.target, NODE_SELECTOR, TREE_VIEW_SELECTOR);
-
-    if (!nodeElement) return;
-
-    const { data } = this.state;
-    const nodeId = nodeElement.dataset.id;
-    const node = data.find(x => x.id === nodeId);
-    const isFakeNoode = nodeElement.matches(FAKE_NODE_SELECTOR);
-    const isNodeFolder = isFolder(node);
-
-    this.overNode = {
-      id: nodeId,
-      fake: isFakeNoode,
-      folder: isNodeFolder,
-      top: nodeElement.offsetTop,
-      height: nodeElement.offsetHeight,
-    };
-
-    setTimeout(() => {
-      if (!isFakeNoode && isNodeFolder) {
-        this.clearTimer();
-        this.openFolderTimer = setTimeout(() => this.expandNode(nodeId, true), 1000);
-      } else {
-        this.clearTimer();
-      }
-    });
-  }
-
-  handleDragLeave(e) {
-
-    const nodeElement = findParentElement(
-      e.target,
-      NODE_SELECTOR,
-      TREE_VIEW_SELECTOR
-    );
-
-    if (!nodeElement) return;
-
-    const { data } = this.state;
-    const nodeId = nodeElement.dataset.id;
-    const node = data.find(x => x.id === nodeId);
-
-    this.clearTimer();
-  }
-
-  handleDragOver(e) {
-
-    if (!this.overNode) return;
-
-    const {
-      id, fake, folder,
-      top, height
-    } = this.overNode;
-
-    if (e.clientY < top || fake) return;
-
-    const mousePosition = e.clientY - top;
-    const mouseRelativePosition = mousePosition / height;
-    const status = getOverStatus(mouseRelativePosition, folder);
-
-    if (!this.dragOverStatus
-      || this.dragOverStatus.id !== id
-      || this.dragOverStatus.status !== status) {
-      this.dragOverStatus = { id, status };
-      this.dragOverNode(id, status);
-    }
-  }
-
-  handleDrop(id) {
-
-    const { data, currentChapterId } = this.state;
-
-    const nextData = reorder(data, this.movedNode.id, id);
-
-    const { treeData, preparedData } = getPreparedData(nextData, data, currentChapterId);
-
-    this.movedNode = null;
-    this.setState({ data: preparedData, tree: treeData });
-  }
-
-  handleDragEnd(e) {
-
-    const nodeElement = findParentElement(
-      e.target,
-      NODE_SELECTOR,
-      TREE_VIEW_SELECTOR
-    );
-
-    const nodeId = nodeElement.dataset.id;
-
-    this.draggableNode(nodeId, false);
-
-    setTimeout(() => {
-      this.dragOverNode(null, null);
+    this.setState({
+      data: nextData,
+      cookedData,
     });
 
-    removeDragImage(nodeId);
-    this.removeDndListeners();
-  }
-
-  buildTree(tree, orderPath = []) {
-    return tree.map((link, order) => {
-
-      const node = this.takeNode(link.id);
-      const newOrderPath = [...orderPath, order];
-
-      return (
-        <TreeViewNode
-          id={node.id}
-          key={node.id}
-          name={node.name}
-          type={node.type}
-          current={node.current}
-          selected={node.selected}
-          draggable={node.draggable}
-          dragOver={node.dragOver}
-          expanded={node.expanded}
-          editing={node.editing}
-          orderPath={newOrderPath}
-          order={order}
-          onChoose={() => this.chooseChapter(node.id)}
-          onExpand={value => this.expandNode(node.id, value)}
-          onSelect={value => this.selectNode(node.id, value)}
-          onStartEditing={() => this.startEditing(node.id)}
-          onCancelEditing={() => this.cancelEditing(node.id)}
-          onSubmitEditing={value => this.submitEditing(node.id, value)}
-          onDragStart={e => this.handleDragStart(node.id, e)}
-          onDrop={e => this.handleDrop(node.id, e)}
-          onDragEnd={e => this.handleDragEnd(e)}>
-          {link.children && this.buildTree(link.children, newOrderPath)}
-        </TreeViewNode>
-      );
-    });
   }
 
   render() {
-    const { tree } = this.state;
+    const { cookedData, instant } = this.state;
+    const count = cookedData.length;
     return (
       <div className="tree-view">
-        {this.buildTree(tree)}
+        {
+          cookedData.map((node, order) => (
+            <Draggable
+              key={node.id}
+              instant={instant}
+              shift={node.shift}
+              minShift={-order}
+              maxShift={count - order - 1}
+              onDrag={ev => this.handleDrag(ev, node)}
+              onDragEnd={ev => this.handleDrop(ev, node)}>
+              <div className="tv-node__content">
+                {node.name}
+              </div>
+            </Draggable>
+          ))
+        }
       </div>
     );
   }

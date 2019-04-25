@@ -3,10 +3,10 @@ const faker = require('faker');
 export const getData = (n) => {
 
   const res = [{
-    id: faker.random.uuid(),
+    id: 'ROOT',
     createdBy: 'rkoss',
     created: 1553514507370,
-    name: faker.name.firstName(),
+    name: faker.name.jobTitle(),
     parentId: 'ROOT',
     type: 'FOLDER',
     modifiedBy: 'rkoss',
@@ -26,7 +26,7 @@ export const getData = (n) => {
       id: faker.random.uuid(),
       createdBy: 'rkoss',
       created: 1553514507370,
-      name: faker.name.firstName(),
+      name: faker.name.jobTitle(),
       parentId,
       type,
       modifiedBy: 'rkoss',
@@ -34,7 +34,7 @@ export const getData = (n) => {
     });
   }
 
-  return res;
+  return res.splice(1, res.length - 1);
 };
 
 export default [

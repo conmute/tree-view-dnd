@@ -9,7 +9,7 @@ import { getData } from './data';
 
 const App = () => (
   <div className="app-wrap">
-    <TreeView data={getData(10)} />
+    <TreeView data={getData(50)} />
   </div>
 );
 

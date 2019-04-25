@@ -103,12 +103,12 @@ class TreeView extends Component {
   }
 
   render() {
-    const { cookedData, instant } = this.state;
-    const count = cookedData.length;
+    const { data, instant } = this.state;
+    const count = data.length;
     return (
       <div className="tree-view">
         {
-          cookedData.map((node, order) => (
+          data.map((node, order) => (
             <Draggable
               key={node.id}
               instant={instant}

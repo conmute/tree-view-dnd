@@ -25,7 +25,6 @@ export default class Draggable extends React.Component {
 
     this.state = {
       isDragging: false,
-      originalX: 0,
       originalY: 0,
       translateY: 0,
       shift: props.shift,
@@ -53,7 +52,7 @@ export default class Draggable extends React.Component {
     window.removeEventListener('mouseup', this.handleMouseUp);
   }
 
-  handleMouseDown({ clientX, clientY }) {
+  handleMouseDown({ clientY }) {
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
 
@@ -62,7 +61,6 @@ export default class Draggable extends React.Component {
     }
 
     this.setState({
-      originalX: clientX,
       originalY: clientY,
       isDragging: true
     });
@@ -75,11 +73,7 @@ export default class Draggable extends React.Component {
     if (!isDragging) return;
 
     const { onDrag, minShift, maxShift } = this.props;
-
-    const {
-      shift,
-      originalX, originalY,
-    } = this.state;
+    const { shift, originalY } = this.state;
 
     const translateY = clientY - originalY;
 
@@ -96,16 +90,21 @@ export default class Draggable extends React.Component {
     }, () => { if (onDrag) onDrag({ shift: nextShift }); });
   }
 
-  handleMouseUp() {
+  handleMouseUp(ev) {
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
+
+    const { isDragging } = this.state;
+
+    if (!isDragging) return;
+
+    ev.stopPropagation();
 
     const { shift } = this.state;
     const { onDragEnd } = this.props;
     if (onDragEnd) onDragEnd({ shift });
 
     this.setState({
-      originalX: 0,
       originalY: 0,
       translateY: 0,
       shift: 0,

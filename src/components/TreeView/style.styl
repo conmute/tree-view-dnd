@@ -4,7 +4,7 @@
   padding 0
   width 100%
   height 100%
-  will-change: scroll-position
+  color #333
   background-color #f0f0f0
   will-change scroll-position
   overflow auto
@@ -17,11 +17,113 @@
   height 27px
   padding-left 41px
   font-size inherit
-  will-change: transform
+  cursor pointer
   box-sizing border-box
   user-select none
   border-left 5px solid transparent
   overflow hidden
+
+  &:focus
+    outline none
+    // background-color rgba(#d4e3fc, .4)
+
+.tv-node__children
+  max-height 0
+  overflow: hidden;
+
+.tv-node__switcher
+  display inline-block
+  width 20px
+  height 100%  
+  position absolute
+  left 41px - 40px
+  top 0
+  text-align: center
+  cursor pointer
+
+.tv-node__icon
+  display inline-block
+  width 20px
+  height 100%  
+  position absolute
+  left 41px - 20px
+  top 0
+  text-align: center
+
+.tv-node__title
+  padding 0 5px
+  width 100%
+  height 100%
+  box-sizing border-box
+  outline none
+  display block
+  white-space: nowrap;
+  overflow hidden
+  text-overflow ellipsis
+
+.tv-node__input
+  width 100%
+  height 100%
+  box-sizing border-box
+  padding 0 5px
+  outline none
+
+.tv-node__content.tv-node__content_fake
+  max-height 0
+  transition all 1s ease-out;
+
+.tv-node
+
+  // &.tv-node_odd:not(.tv-node_selected)
+  //   & > .tv-node__content 
+  //     background-color #ebebeb
+
+  &.tv-node_selected
+    & > .tv-node__content 
+      background-color rgba(#d4e3fc, .6)
+
+  &.tv-node_expanded
+    padding 0
+    & > .tv-node__children
+      max-height 99999px
+
+  &.tv-node_current
+    & > .tv-node__content:not(.tv-node__content_fake)
+      border-left 5px solid #1074b6
+      background-color #d4e3fc
+
+  &.tv-node_editing
+    padding 0
+
+  &.tv-node_draggable
+    &:not(.tv-node_drag-over) 
+      .tv-node__content
+        height 0
+    &.tv-node_drag-over
+      &.tv-node_current
+      .tv-node__content
+        border-left 5px solid transparent
+        background-color transparent
+
+  &.tv-node_drag-over
+    &.tv-node_folder
+      &.tv-node_drag-over_hightlight > .tv-node__content:not(.tv-node__content_fake)
+        background-color #d4e3fc
+    & > .tv-node__content.tv-node__content_fake
+      max-height 27px
+
+  &:not(.tv-node_folder)
+    .tv-node__switcher
+      visibility hidden
+
+  for num in (0..9)
+    &.tv-node_deep-level-{num}
+      & > .tv-node__content 
+        padding-left 41px + 22px * num
+        & > .tv-node__switcher
+          left 41px - 40px + 22px * num
+        & > .tv-node__icon
+          left 41px - 20px + 22px * num
 
 .dragging
   background-color #efefff

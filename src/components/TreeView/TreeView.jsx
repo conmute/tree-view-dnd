@@ -1,9 +1,11 @@
+/* eslint-disable jsx-a11y/interactive-supports-focus */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import autoBind from 'react-autobind';
+import classnames from 'classnames';
 import * as _ from 'lodash';
 
 import './style.styl';
@@ -40,9 +42,37 @@ const getPathToRoot = (nodeId, nodeList) => {
   return path;
 };
 
+const groupeData = data => _.groupBy(data, x => x.parentId);
+
+const sortGroupes = group => group
+  .map((x, i) => (_.isUndefined(x.order) ? { ...x, order: i } : x)) // temp
+  .sort((a, b) => a.order - b.order);
+
+const createList = (groupes, key = 'ROOT', res = []) => {
+
+  if (!groupes[key]) return [];
+
+  groupes[key].forEach(({ id, type }) => {
+
+    if (type === nodeTypes.FOLDER) {
+      createList(groupes, id, res);
+    }
+
+    res.push(id);
+  });
+
+  return res;
+};
+
+
 const cookData = (nextData, expandedIds = []) => {
 
-  const data = [...nextData];
+  const grouppedData = groupeData(nextData);
+  const sortedGroupes = _.mapValues(grouppedData, sortGroupes);
+  const sortedIds = createList(sortedGroupes);
+  const keyData = {};
+  nextData.forEach((x) => { keyData[x.id] = x; });
+  const data = sortedIds.map(id => keyData[id]);
 
   const collapsedIds = data
     .filter(x => x.type === nodeTypes.FOLDER)
@@ -50,9 +80,10 @@ const cookData = (nextData, expandedIds = []) => {
     .map(x => x.id);
 
   return data
-    .map(x => ({
+    .map((x, i) => ({
       ...x,
-      deep: getPathToRoot(x.id, data).length
+      deep: getPathToRoot(x.id, data).length,
+      odd: (i + 1) % 2,
     }))
     .filter(x => collapsedIds.indexOf(x.parentId) === -1);
 };
@@ -121,7 +152,6 @@ class TreeView extends Component {
     }
 
     const cookedData = cookData(data, nextExpandedIds);
-    console.log('cookedData: ', cookedData);
 
     this.setState({
       expandedIds: nextExpandedIds,
@@ -165,11 +195,44 @@ class TreeView extends Component {
               maxShift={count - order - 1}
               onDrag={ev => this.handleDrag(ev, node)}
               onDragEnd={ev => this.handleDrop(ev, node)}>
-              <div className={`tv-node tv-node_deep-level-${node.deep}`}>
+              <div className={`
+                tv-node tv-node_deep-level-${node.deep}
+                ${node.odd ? 'tv-node_odd' : ''
+                }`}>
+
                 <div
                   onClick={() => this.handleNodeClick(node.id)}
                   className="tv-node__content">
-                  {node.name}
+
+                  {
+                    node.type === nodeTypes.FOLDER && (
+                      <div
+                        role="button"
+                        onClick={this.handleSwitchClick}
+                        className="tv-node__switcher">
+                        <span
+                          className={classnames('fa', {
+                            'fa-caret-down': node.expanded,
+                            'fa-caret-right': !node.expanded,
+                          })}
+                          aria-hidden="true" />
+                      </div>
+                    )
+                  }
+
+                  <div className="tv-node__icon">
+                    <span
+                      className={classnames('fa', {
+                        'fa-folder-open-o': node.type === nodeTypes.FOLDER,
+                        'fa-file-o': node.type !== nodeTypes.FOLDER,
+                      })}
+                      aria-hidden="true" />
+                  </div>
+
+                  <div className="tv-node__title">
+                    <span>{node.name}</span>
+                  </div>
+
                 </div>
               </div>
             </Draggable>

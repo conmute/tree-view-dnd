@@ -60,17 +60,10 @@ export default class Draggable extends React.Component {
       this.props.onDragStart();
     }
 
-    this.setState({
-      originalY: clientY,
-      isDragging: true
-    });
+    this.setState({ originalY: clientY });
   }
 
   handleMouseMove({ clientY }) {
-
-    const { isDragging } = this.state;
-
-    if (!isDragging) return;
 
     const { onDrag, minShift, maxShift } = this.props;
     const { shift, originalY } = this.state;
@@ -86,7 +79,8 @@ export default class Draggable extends React.Component {
 
     this.setState({
       translateY: nextTranslateY,
-      shift: nextShift
+      shift: nextShift,
+      isDragging: true,
     }, () => { if (onDrag) onDrag({ shift: nextShift }); });
   }
 
@@ -125,7 +119,7 @@ export default class Draggable extends React.Component {
     }
 
     nextStyle.transform = `translate(0px, ${translateY}px)`;
-    nextStyle.WebkitTransform = `translate(0px, ${translateY}px)`;
+    nextStyle.WebkitTransform = nextStyle.transform;
 
     return (
       <div

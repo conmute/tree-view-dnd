@@ -6,16 +6,7 @@ import autoBind from 'react-autobind';
 import classnames from 'classnames';
 import * as _ from 'lodash';
 
-import { findParentElement } from './helpers';
-
-const cutNumber = (n, min = 0, max) => {
-
-  const firstCut = n < min ? min : n;
-
-  if (!max) return firstCut;
-
-  return firstCut > max ? max : firstCut;
-};
+import { findParentElement, cutNumber } from './helpers';
 
 export default class Draggable extends React.Component {
 
@@ -25,8 +16,10 @@ export default class Draggable extends React.Component {
 
     this.state = {
       isDragging: false,
+      originalX: 0,
       originalY: 0,
       translateY: 0,
+      xShift: 0,
       shift: props.shift,
     };
   }
@@ -52,7 +45,7 @@ export default class Draggable extends React.Component {
     window.removeEventListener('mouseup', this.handleMouseUp);
   }
 
-  handleMouseDown({ clientY }) {
+  handleMouseDown({ clientX, clientY }) {
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
 
@@ -60,28 +53,39 @@ export default class Draggable extends React.Component {
       this.props.onDragStart();
     }
 
-    this.setState({ originalY: clientY });
+    this.setState({
+      originalX: clientX,
+      originalY: clientY
+    });
   }
 
-  handleMouseMove({ clientY }) {
+  handleMouseMove({ clientX, clientY }) {
 
     const { onDrag, minShift, maxShift } = this.props;
-    const { shift, originalY } = this.state;
+    const {
+      shift,
+      xShift,
+      originalX,
+      originalY
+    } = this.state;
 
+    const translateX = clientX - originalX;
     const translateY = clientY - originalY;
 
-    const { clientHeight } = this.selfElement;
+    const { clientWidth, clientHeight } = this.selfElement;
+    const nextXShift = Math.round(translateX / clientWidth * 10);
     const nextShift = cutNumber(Math.round(translateY / clientHeight), minShift, maxShift);
 
-    if (nextShift === shift) return;
+    if (nextShift === shift && nextXShift === xShift) return;
 
     const nextTranslateY = nextShift * clientHeight;
 
     this.setState({
       translateY: nextTranslateY,
+      xShift: nextXShift,
       shift: nextShift,
       isDragging: true,
-    }, () => { if (onDrag) onDrag({ shift: nextShift }); });
+    }, () => { if (onDrag) onDrag({ xShift: nextXShift, yShift: nextShift }); });
   }
 
   handleMouseUp(ev) {

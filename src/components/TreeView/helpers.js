@@ -11,72 +11,41 @@ export const inRange = (n, from, to) => n >= from && n <= to;
 
 export const inArray = (arr, el) => arr.indexOf(el) !== -1;
 
+export const isFolder = node => node.type === nodeTypes.FOLDER;
+
+export const cutNumber = (n, min = 0, max) => {
+  const firstCut = n < min ? min : n;
+  return firstCut > max ? max : firstCut;
+};
+
 export const getShiftedRange = (shift, lastOrder, nextOrder) => ({
   from: shift > 0 ? lastOrder + 1 : nextOrder,
   to: shift > 0 ? nextOrder : lastOrder,
 });
 
-const getPathToRoot = (nodeList, nodeId) => {
+const getClothestNumber = (arr, n) => {
 
-  if (!nodeId || !nodeList) return null;
+  let clothest = arr[0];
 
-  const folderIdList = nodeList
-    .reduce((acc, cur) => ({ ...acc, [cur.id]: cur.parentId }), {});
-
-  const path = [];
-  let targetId = nodeId;
-
-  while (folderIdList[targetId] !== ROOT) {
-    targetId = folderIdList[targetId];
-    path.push(targetId);
+  for (let i = 1, ln = arr.length; i < ln; i += 1) {
+    if (Math.abs(n - arr[i]) < Math.abs(n - clothest)) {
+      clothest = arr[i];
+    }
   }
 
-  return path;
+  return clothest;
 };
 
-const groupeData = data => _.groupBy(data, x => x.parentId);
+export const getDeepValue = (dropOptions, nodeDeep, xShift) => {
 
-const sortGroupes = group => group
-  .map((x, i) => (_.isUndefined(x.order) ? { ...x, order: i } : x)) // temp
-  .sort((a, b) => a.order - b.order);
+  const deepValuesList = dropOptions
+    .map(({ deep }) => deep)
+    .sort((a, b) => a - b);
 
-const createList = (groupes, key = 'ROOT', res = []) => {
+  const clothestDeepValue = getClothestNumber(deepValuesList, nodeDeep);
 
-  groupes[key].forEach((x) => {
+  const minDeepValue = deepValuesList[0];
+  const maxDeepValue = deepValuesList[deepValuesList.length - 1];
 
-    res.push(x);
-
-    if (groupes[x.id] && groupes[x.id].length) {
-      createList(groupes, x.id, res);
-    }
-
-  });
-
-  return res;
-};
-
-export const cookData = (nextData, expandedIds = []) => {
-
-  const grouppedData = groupeData(nextData);
-  const sortedGroupes = _.mapValues(grouppedData, sortGroupes);
-  const data = createList(sortedGroupes);
-
-  return data
-    .map((x, order) => {
-
-      const pathToRoot = getPathToRoot(nextData, x.id);
-      const deep = pathToRoot.length;
-      const expanded = inArray(expandedIds, x.id);
-      const odd = (order + 1) % 2;
-      const cookOrder = order;
-
-      return {
-        ...x, pathToRoot, deep, expanded, odd, cookOrder
-      };
-    })
-    .filter(({ parentId, pathToRoot }) => {
-      const isRoot = parentId === ROOT;
-      const shouldBeExpanded = pathToRoot.every(p => inArray(expandedIds, p));
-      return isRoot || shouldBeExpanded;
-    });
+  return cutNumber(clothestDeepValue + xShift, minDeepValue, maxDeepValue);
 };
